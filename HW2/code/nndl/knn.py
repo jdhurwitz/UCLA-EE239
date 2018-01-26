@@ -49,7 +49,7 @@ class KNN(object):
         #   Compute the distance between the ith test point and the jth       
         #   training point using norm(), and store the result in dists[i, j].     
         # ================================================================ #
-        euclidean_dist = np.linalg.norm(X[i]-self.X_train[j])
+        euclidean_dist = norm(X[i]-self.X_train[j])
 #        print(euclidean_dist)
         dists[i,j] = euclidean_dist
 
@@ -135,6 +135,8 @@ class KNN(object):
       #   neighbors.  Store the predicted label of the ith training example
       #   as y_pred[i].  Break ties by choosing the smaller label.
       # ================================================================ #
+
+      #get indices corresponding to increasing sorting order 
       sorted_indices = np.argsort(dists[i])
       for kval in range(0, k):
         closest_y.append(self.y_train[sorted_indices[kval]])
