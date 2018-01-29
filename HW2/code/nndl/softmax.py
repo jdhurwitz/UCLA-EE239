@@ -7,10 +7,10 @@ class Softmax(object):
 
   def init_weights(self, dims):
     """
-	Initializes the weight matrix of the Softmax classifier.  
-	Note that it has shape (C, D) where C is the number of 
-	classes and D is the feature size.
-	"""
+  Initializes the weight matrix of the Softmax classifier.  
+  Note that it has shape (C, D) where C is the number of 
+  classes and D is the feature size.
+  """
     self.W = np.random.normal(size=dims) * 0.0001
 
   def loss(self, X, y):
@@ -39,7 +39,20 @@ class Softmax(object):
     #   set margins, and then normalize the loss by the number of 
     #   training examples.)
     # ================================================================ #
-    pass
+    num_examples = X.shape[0]
+    num_classes = self.W.shape[0]
+    print(num_examples, num_classes)
+
+    for i in range(0, num_examples):
+      #a_i(x) = w_i.T*x 
+      a_i = X[i].dot(self.W.T)
+      inner_loss = 0.0
+      for j in range(0, num_classes):
+        a_j = X[j].dot(self.W.T)
+        inner_loss += np.exp(a_j) - a_i *X[i]
+        print(inner_loss)
+
+      loss += np.log2(inner_loss)
     
     # ================================================================ #
     # END YOUR CODE HERE
@@ -49,11 +62,11 @@ class Softmax(object):
 
   def loss_and_grad(self, X, y):
     """
-	Same as self.loss(X, y), except that it also returns the gradient.
+  Same as self.loss(X, y), except that it also returns the gradient.
 
-	Output: grad -- a matrix of the same dimensions as W containing 
-		the gradient of the loss with respect to W.
-	"""
+  Output: grad -- a matrix of the same dimensions as W containing 
+    the gradient of the loss with respect to W.
+  """
 
     # Initialize the loss and gradient to zero.
     loss = 0.0
@@ -96,7 +109,7 @@ class Softmax(object):
   def fast_loss_and_grad(self, X, y):
     """
     A vectorized implementation of loss_and_grad. It shares the same
-	inputs and ouptuts as loss_and_grad.
+  inputs and ouptuts as loss_and_grad.
     """
     loss = 0.0
     grad = np.zeros(self.W.shape) # initialize the gradient as zero
@@ -134,7 +147,7 @@ class Softmax(object):
     num_train, dim = X.shape
     num_classes = np.max(y) + 1 # assume y takes values 0...K-1 where K is number of classes
 
-    self.init_weights(dims=[np.max(y) + 1, X.shape[1]])	# initializes the weights of self.W
+    self.init_weights(dims=[np.max(y) + 1, X.shape[1]]) # initializes the weights of self.W
 
     # Run stochastic gradient descent to optimize W
     loss_history = []

@@ -37,19 +37,32 @@ class SVM(object):
     num_train = X.shape[0]
     loss = 0.0
 
-    for i in np.arange(num_train):
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the normalized SVM loss, and store it as 'loss'.
     #   (That is, calculate the sum of the losses of all the training 
     #   set margins, and then normalize the loss by the number of 
     #   training examples.)
-    # ================================================================ #
-      pass
-    
-    # ================================================================ #
-    # END YOUR CODE HERE
-    # ================================================================ #
+    # ================================================================ #    
+    for i in np.arange(num_train):
+      predictions = X[i].dot(self.W.T)
+      gnd_truth = predictions[y[i]]
+      counter = 0
+      for j in range(0, num_classes):
+        #j != y from summation
+        if(j==y[i]):
+          continue
+
+        #margin calculation
+        w = predictions[j] - gnd_truth + 1
+        if(w > 0):
+          counter+=1
+          loss += w
+
+
+
+    loss /= num_train # get mean
+   
 
     return loss
   
@@ -62,18 +75,34 @@ class SVM(object):
 	"""
   
     # compute the loss and the gradient
+
     num_classes = self.W.shape[0]
     num_train = X.shape[0]
     loss = 0.0
     grad = np.zeros_like(self.W)
-
+    print(self.W.shape[1])
     for i in np.arange(num_train):
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the SVM loss and the gradient.  Store the gradient in
     #   the variable grad.
     # ================================================================ #
-      pass
+      predictions = X[i].dot(self.W.T)
+      gnd_truth = predictions[y[i]]
+      counter = 0
+      for j in range(0, num_classes):
+        #j != y from summation
+        if(j==y[i]):
+          continue
+
+        #margin calculation
+        w = predictions[j] - gnd_truth + 1
+        if(w > 0):
+          counter+=1
+          grad[j,:] += X[i]
+          loss += w
+
+      grad[y[i], :] += (-counter)*X[i]
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -117,7 +146,11 @@ class SVM(object):
     # YOUR CODE HERE:
     #   Calculate the SVM loss WITHOUT any for loops.
     # ================================================================ #
-
+    predictions = X.dot(self.W.T)
+    gnd_truth = predictions[np.arange(num_train), y]
+    margins = np.maximum(0, predictions - gnd_truth[:, np.newaxis] + 1)
+    margins[np.arange(num_train), y] = 0
+    loss = np.sum(margins)
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
