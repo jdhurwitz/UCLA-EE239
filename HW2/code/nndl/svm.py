@@ -80,7 +80,7 @@ class SVM(object):
     num_train = X.shape[0]
     loss = 0.0
     grad = np.zeros_like(self.W)
-    print(self.W.shape[1])
+#    print(self.W.shape[1])
     for i in np.arange(num_train):
     # ================================================================ #
     # YOUR CODE HERE:
@@ -107,6 +107,7 @@ class SVM(object):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
+
 
     loss /= num_train
     grad /= num_train
@@ -141,16 +142,20 @@ class SVM(object):
     """
     loss = 0.0
     grad = np.zeros(self.W.shape) # initialize the gradient as zero
-  
+    num_train = X.shape[0]
+#    print(num_train)
+#    print("X shape", X.shape)
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the SVM loss WITHOUT any for loops.
     # ================================================================ #
     predictions = X.dot(self.W.T)
     gnd_truth = predictions[np.arange(num_train), y]
-    margins = np.maximum(0, predictions - gnd_truth[:, np.newaxis] + 1)
-    margins[np.arange(num_train), y] = 0
-    loss = np.sum(margins)
+    hinge = np.maximum(0, predictions - gnd_truth[:, np.newaxis] + 1)
+    hinge[np.arange(num_train), y] = 0
+    loss = np.sum(hinge)
+
+    loss /= num_train
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -161,6 +166,39 @@ class SVM(object):
     # YOUR CODE HERE:
     #   Calculate the SVM grad WITHOUT any for loops.
     # ================================================================ #
+
+    """
+    -We have 3073 features, and 500 examples. There are 10 classes we can classify into.
+    -X is shape (500, 3073).
+    -The margins will be shape (500, 10), where each row corresponds to the margin for one 
+    of the 500 examples. Index (i, j) corresponds to the margin of example i for class j.
+    -We need to make a new matrix that has a 1 wherever the margin is > 0, and then sum across the 
+    columns.
+    """
+    #Need to look at the margins and if > 0, we're going to need to add 1 to the counter. 
+    #Then, we multiply -counter by X
+    
+#    print("margin shape", margins.shape)
+    counter_matrix = np.zeros(hinge.shape) #row = example, col = class 
+
+    #place a 1 wherever hinge loss are > 0.
+    counter_matrix[hinge >  0 ] = 1
+
+    #Sum across the classes
+    counter = np.sum(counter_matrix, axis=1)
+
+#    print(counter)
+ #   print(counter.shape)
+#    print(counter_matrix)
+
+    #Need to subtract the hinge loss values from each of the points in the counter matrix
+    ex_idx = np.arange(num_train)
+    counter_matrix[ex_idx, y] = -counter #FIX THIS ERROR
+
+    #Take dot product of X and the errors to see how we need to update the weights
+    grad = (X.T.dot(counter_matrix)).T
+    grad /= num_train
+
     
     # ================================================================ #
     # END YOUR CODE HERE
@@ -208,7 +246,12 @@ class SVM(object):
       #   in the dataset.  Use np.random.choice.  It's okay to sample with
       #   replacement.
       # ================================================================ #
-      
+      rand_indices = np.random.choice(np.arange(num_train), batch_size)
+#      print(rand_indices)
+      X_batch = X[rand_indices]
+      y_batch = y[rand_indices]
+#      print(X.shape)
+ #     print(X_batch.shape)
       # ================================================================ #
       # END YOUR CODE HERE
       # ================================================================ #
@@ -221,7 +264,7 @@ class SVM(object):
       # YOUR CODE HERE:
       #   Update the parameters, self.W, with a gradient step 
       # ================================================================ #
-
+      self.W -= learning_rate*grad
       # ================================================================ #
       # END YOUR CODE HERE
       # ================================================================ #
@@ -236,6 +279,8 @@ class SVM(object):
     Inputs:
     - X: N x D array of training data. Each row is a D-dimensional point.
 
+    N = the number of examples
+
     Returns:
     - y_pred: Predicted labels for the data in X. y_pred is a 1-dimensional
       array of length N, and each element is an integer giving the predicted
@@ -248,6 +293,13 @@ class SVM(object):
     # YOUR CODE HERE:
     #   Predict the labels given the training data with the parameter self.W.
     # ================================================================ #
+    #y will be size N. 
+    # X=(N x D)  W=(C x D) where C = #of classes
+    #Result will be (N x C)
+    multi_class_preds = (X).dot(self.W.T)
+
+    #find the highest ranking class value among the 10 classes -> columns so axis=1
+    y_pred = np.argmax(multi_class_preds, axis=1)
     
     # ================================================================ #
     # END YOUR CODE HERE

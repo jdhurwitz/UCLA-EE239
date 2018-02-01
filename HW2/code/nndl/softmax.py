@@ -13,6 +13,10 @@ class Softmax(object):
   """
     self.W = np.random.normal(size=dims) * 0.0001
 
+
+
+  
+
   def loss(self, X, y):
     """
     Calculates the softmax loss.
@@ -39,26 +43,37 @@ class Softmax(object):
     #   set margins, and then normalize the loss by the number of 
     #   training examples.)
     # ================================================================ #
+    
+
+
     num_examples = X.shape[0]
     num_classes = self.W.shape[0]
-    print(num_examples, num_classes)
+#    print(num_examples, num_classes)
 
+    #outer summation 
     for i in range(0, num_examples):
-      #a_i(x) = w_i.T*x 
       a_i = X[i].dot(self.W.T)
-      inner_loss = 0.0
-      for j in range(0, num_classes):
-        a_j = X[j].dot(self.W.T)
-        inner_loss += np.exp(a_j) - a_i *X[i]
-        print(inner_loss)
 
-      loss += np.log2(inner_loss)
-    
+      #sum over all
+      sigma_j = np.sum(np.exp(a_i))
+
+      # -a_y(i)*X(i) + log(summation)
+      probs = lambda idx: np.exp(a_i[idx])/sigma_j
+      loss_sum = probs(y[i])#self.get_probs(y[i], a_i, sigma_j)
+
+      #need to maintain negative sign
+      loss -= np.log(loss_sum)
+
+   
+    loss /= num_examples
+   
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
 
     return loss
+
+
 
   def loss_and_grad(self, X, y):
     """
@@ -77,7 +92,25 @@ class Softmax(object):
     #   Calculate the softmax loss and the gradient. Store the gradient
     #   as the variable grad.
     # ================================================================ #
-    pass
+    num_examples = X.shape[0]
+    num_classes = self.W.shape[0]
+#    print(num_examples, num_classes)
+
+    #outer summation 
+    for i in range(0, num_examples):
+      a_i = X[i].dot(self.W.T)
+
+      #sum over all
+      sigma_j = np.sum(np.exp(a_i))
+
+      # -a_y(i)*X(i) + log(summation)
+      loss_sum = get_probs(y[i])
+
+      #need to maintain negative sign
+      loss -= np.log(loss_sum)
+
+   
+    loss /= num_examples
     
     # ================================================================ #
     # END YOUR CODE HERE
