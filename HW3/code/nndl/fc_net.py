@@ -90,33 +90,29 @@ class TwoLayerNet(object):
      # Unpack variables from the params dictionary
     W1, b1 = self.params['W1'], self.params['b1']
     W2, b2 = self.params['W2'], self.params['b2']
-    N, D = X.shape
+
 
     # Compute the forward pass
     scores = None
-
     # ================================================================ #
     # YOUR CODE HERE:
-    #   Calculate the output scores of the neural network.  The result
-    #   should be (C, N). As stated in the description for this class,
-    #   there should not be a ReLU layer after the second FC layer.
-    #   The output of the second FC layer is the output scores. Do not
-    #   use a for loop in your implementation.
-    # ================================================================ #
-#    print(N,D)
-    #  input - fully connected layer - ReLU - fully connected layer - softmax
-    #first layer
-    HL1_pre_activation = X.dot(W1) + b1
-    HL1_output = np.maximum(0, HL1_pre_activation) #relu 
-
-    #second layer
-    HL2_pre_activation = HL1_output.dot(W2) + b2
-
-    scores = HL2_pre_activation
+    #   Implement the forward pass of the two-layer neural network. Store
+    #   the class scores as the variable 'scores'.  Be sure to use the layers
+    #   you prior implemented.
+    # ================================================================ #    
     
+    #affine_relu_forward returns out, cached
+    hl1, hl1_cached = affine_relu_forward(X, W1, b1)
+
+    #affine_forward returns out, cache
+    hl2, hl2_cached = affine_forward(hl1, W2, b2)
+
+    scores = hl2
+    scores_cached= hl2_cached
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
+
 
   
     # If the targets are not given then jump out, we're done
@@ -124,105 +120,50 @@ class TwoLayerNet(object):
       return scores
 
     # Compute the loss
-    loss = 0.0
+    loss, grads = 0, {}
 
     # ================================================================ #
     # YOUR CODE HERE:
-    #   Calculate the loss of the neural network.  This includes the 
-    #   softmax loss and the L2 regularization for W1 and W2. Store the 
-    #   total loss in the variable loss.  Multiply the regularization
-    #   loss by 0.5 (in addition to the factor reg).
-    # ================================================================ #
-
-    # scores is num_examples by num_classes
-    #Loss is made up of standard softmax loss and L2 regularization 
-    #Generate probability of being in a class based on output (softmax)
-    class_probabilities = np.exp(scores)/np.sum(np.exp(scores), axis=1, keepdims=True)
-
-    """ 
-    There will be N rows, where each row corresponds to an input.
-    There are D columns, where each column will correspond to probability of being in that class.
-    y is our gnd truth, so for some y=j and example i, we want class_probabilities[i, y=j]
+    #   Implement the backward pass of the two-layer neural net.  Store
+    #   the loss as the variable 'loss' and store the gradients in the 
+    #   'grads' dictionary.  For the grads dictionary, grads['W1'] holds
+    #   the gradient for W1, grads['b1'] holds the gradient for b1, etc.
+    #   i.e., grads[k] holds the gradient for self.params[k].
+    #
+    #   Add L2 regularization, where there is an added cost 0.5*self.reg*W^2
+    #   for each W.  Be sure to include the 0.5 multiplying factor to 
+    #   match our implementation.
+    #
+    #   And be sure to use the layers you prior implemented.
+    # ================================================================ #    
+    
     """
-#    print(y)
- #   print(class_probabilities)
-#    print(range[N])
-    prob_of_correct_y = class_probabilities[np.arange(N), y]
-    log_loss = -np.log(prob_of_correct_y)
-    sum_log_loss = np.sum(log_loss)
-    #divide by num examples
-    loss = sum_log_loss/N
-
-    """
-    L2 regularization for matrix involves Frobenius norm. 
-    reg = 0.5*|| w ||_F ^2
-    Frobenius norm is equiv to Sigma_iSigma_j(w_ij)^2, so we can just do a dual sum
-    """
-    frob_norm_w1 = np.sum(W1**2)
-    frob_norm_w2 = np.sum(W2**2)
-    reg_w1 = 0.5*self.reg*frob_norm_w1
-    reg_w2 = 0.5*self.reg*frob_norm_w2
-
-    regularized_loss = reg_w1 + reg_w2
+    Softmax loss returns:
+     Returns a tuple of:
+      - loss: Scalar giving the loss
+      - dx: Gradient of the loss with respect to x
+  """
+    loss, grad_loss_wrt_x = softmax_loss(scores, y)
+    regularized_loss = 0.5*self.reg*np.sum(W1**2) + 0.5*self.reg*np.sum(W2**2)
     loss += regularized_loss
-    
 
-    # ================================================================ #
-    # END YOUR CODE HERE
-    # ================================================================ #
+    #backprop
+    #affine return values:  return dx, dw, db
+    dx2, dw2, db2 = affine_backward(grad_loss_wrt_x, scores_cached)
 
-    grads = {}
+    #add in regularization term to weights
+    dw2 += self.reg*W2
 
-    # ================================================================ #
-    # YOUR CODE HERE:
-    #   Implement the backward pass.  Compute the derivatives of the 
-    #   weights and the biases.  Store the results in the grads
-    #   dictionary.  e.g., grads['W1'] should store the gradient for 
-    #   W1, and be of the same size as W1.
-    # ================================================================ #
-    """
-    Source: CS231n online 
-    Gradient of L_i = -log(p_yi) is p_k-1 for (y_i = k)
-
-    For weights we do a mult between the previous layer output and the update
-
-    We will multiply by the negative learning rate so a weight "decrease" at an intermediate step
-    is really a weight increase.
-    """
-    
-
-    #Calculate how we should update the scores
-    update_scores = class_probabilities
-    #Since we made update scores matrix by looking for only cases where y_i = k, we can subtract
-    #from the whole thing
-#    update_scores -= np.ones_like(update_scores)
-    update_scores[np.arange(N), y] -=1
-    update_scores /= N
-
-#    print(update_scores)
-    #backprop W2 take gradient of output and multiply by weight matirx
-    grads['W2'] = np.dot(HL1_output.T, update_scores).T
-
-    #we want to increase the value of the activation of correct classifications 
-    grads['b2'] = np.sum(update_scores, axis=0)#, keepdims=True)
-
-    # dL/dW2 = dL/dOut * dOut/dW2
-    dHL2 = np.dot(update_scores, W2.T)
-
-    # I(a>0)*dl/dh (where h is output of relu layer)
-    # a in this case is HL1_pre_activation
-    dLdA = dHL2
-    dLdA[HL1_output <= 0] = 0
-
-
-    #back prop DlDa into w and b
-    grads['W1'] = np.dot(dLdA.T, X)
-    grads['b1'] = np.sum(dLdA, axis=0)#, keepdims=True)
-    
-
-    grads['W2'] += self.reg * W2.T
-    grads['W1'] += self.reg * W1.T
-
+    #backprop layer 1
+    #relu_backward takes: (dout, cache). In this case the dout is previous chain
+    dx1, dw1, db1 = affine_relu_backward(dx2, hl1_cached)
+    dw1 += self.reg*W1
+  
+    grads['W2'] = dw2
+    grads['b2'] = db2
+    grads['W1'] = dw1
+    grads['b1'] = db1
+  
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -283,10 +224,23 @@ class FullyConnectedNet(object):
     #   weights and biases of layer i are Wi and bi. The
     #   biases are initialized to zero and the weights are initialized
     #   so that each parameter has mean 0 and standard deviation weight_scale.
-    # ================================================================ #
-    
-    pass
+    # ==============================================e================== #
+    mu = 0
+    stddev = weight_scale
+    """
+    self.params['W1'] = std * np.random.randn(hidden_size, input_size)
+    self.params['b1'] = np.zeros(hidden_size)
+    self.params['W2'] = std * np.random.randn(output_size, hidden_size)
+    self.params['b2'] = np.zeros(output_size)
 
+    np.random.normal(mu, stddev, <size>)
+    """
+    #aggregate all the dims into a single array that we can reference
+    #input and output dim (num_classes) will only be used once
+    aggregated_dims = [input_dim] + hidden_dims + [num_classes]
+    for i in range(self.num_layers):
+      self.params['b'+str(i+1)] = np.zeros(aggregated_dims[i+1])
+      self.params['W'+str(i+1)] = np.random.normal(mu, stddev, size=(aggregated_dims[i], aggregated_dims[i+1])) 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -339,7 +293,22 @@ class FullyConnectedNet(object):
     #   scores as the variable "scores".
     # ================================================================ #
 
-    pass
+    nn_layer = {}
+    nn_cache = {}
+
+    #initialize the first layer with the inputs
+    nn_layer[0] = X
+    #pass through each layer
+    for i in range(1, self.num_layers):
+      #affine relu forward takes (x, w, b)
+      nn_layer[i], nn_cache[i] = affine_relu_forward(nn_layer[i-1], self.params['W'+str(i)], self.params['b'+str(i)])
+
+    #all layers will have the affine_relu except for the last layer, which is a passthrough 
+    #affine_forward takes (x, w, b) and outputs out, cache
+    w_idx = 'W'+str(self.num_layers)
+    b_idx = 'b'+str(self.num_layers)
+    scores, cached_scores = affine_forward(nn_layer[self.num_layers -1], self.params[w_idx], self.params[b_idx])
+
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -356,8 +325,42 @@ class FullyConnectedNet(object):
     #   in the grads dict, so that grads[k] is the gradient of self.params[k]
     #   Be sure your L2 regularization includes a 0.5 factor.
     # ================================================================ #
+    #get loss w/ softmax loss
+    loss, grad_loss = softmax_loss(scores, y)
 
-    pass
+    #add L2 regularization to loss 1/2*np.sum(w**2)
+    for i in range(1, self.num_layers + 1):
+      cur_weight_matrix = self.params['W'+str(i)]
+      loss += 0.5 * self.reg * np.sum(cur_weight_matrix**2)
+
+    """
+    Backpropping into the (n-1)th layer will be different because we don't have 
+    the relu. Use affine_backward and then for each previous layer apply affine_relu_backward
+    affine_backward takes dout,cache and returns dx,dw,db
+    affine_relu_backward takes dout, cachce and returns dx,dw,db
+    """
+    dx={}
+    w_idx_nth = 'W'+str(self.num_layers)
+    b_idx_nth = 'b'+str(self.num_layers)
+    dx[self.num_layers], grads[w_idx_nth], grads[b_idx_nth] = affine_backward(grad_loss, cached_scores)
+
+    #regularize
+    grads[w_idx_nth] += self.reg * self.params[w_idx_nth]
+
+    #we apply affine_relu_backward now
+    for i in range(self.num_layers - 1, 0, -1):
+#      print(i, self.num_layers)
+
+      #dx, dw, db
+      w_idx = 'W' + str(i)
+      b_idx = 'b' + str(i)
+
+      #dout input to affine_relu_backward is the 
+      dx[i], grads[w_idx], grads[b_idx] = affine_relu_backward( dx[i+1], nn_cache[i])
+
+      #regularize
+      grads[w_idx] += self.reg * self.params[w_idx]
+
 
     # ================================================================ #
     # END YOUR CODE HERE

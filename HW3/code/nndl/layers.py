@@ -42,6 +42,8 @@ def affine_forward(x, w, b):
   x_reshaped = np.reshape(x, (N,D))
   out = x_reshaped.dot(w) + b
 
+
+
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
@@ -77,7 +79,6 @@ def affine_backward(dout, cache):
   N = x.shape[0]
   D = w.shape[0]
   reshaped_x = np.reshape(x, (N, D))
-
   dw = reshaped_x.T.dot(dout)
 
   #derivative wrt x
