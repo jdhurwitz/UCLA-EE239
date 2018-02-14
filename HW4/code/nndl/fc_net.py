@@ -67,6 +67,12 @@ class FullyConnectedNet(object):
     #   weights and biases of layer i are Wi and bi. The
     #   biases are initialized to zero and the weights are initialized
     #   so that each parameter has mean 0 and standard deviation weight_scale.
+    #
+    #   BATCHNORM: Initialize the gammas of each layer to 1 and the beta
+    #   parameters to zero.  The gamma and beta parameters for layer 1 should
+    #   be self.params['gamma1'] and self.params['beta1'].  For layer 2, they
+    #   should be gamma2 and beta2, etc. Only use batchnorm if self.use_batchnorm 
+    #   is true and DO NOT batch normalize the output scores.
     # ==============================================e================== #
     mu = 0
     stddev = weight_scale
@@ -134,6 +140,13 @@ class FullyConnectedNet(object):
     # YOUR CODE HERE:
     #   Implement the forward pass of the FC net and store the output
     #   scores as the variable "scores".
+    # 
+    #   BATCHNORM: If self.use_batchnorm is true, insert a bathnorm layer
+    #   between the affine_forward and relu_forward layers.  You may
+    #   also write an affine_batchnorm_relu() function in layer_utils.py.
+    #
+    #   DROPOUT: If dropout is non-zero, insert a dropout layer after
+    #   every ReLU layer.
     # ================================================================ #
 
     nn_layer = {}
@@ -167,6 +180,10 @@ class FullyConnectedNet(object):
     #   Implement the backwards pass of the FC net and store the gradients
     #   in the grads dict, so that grads[k] is the gradient of self.params[k]
     #   Be sure your L2 regularization includes a 0.5 factor.
+    #
+    #   BATCHNORM: Incorporate the backward pass of the batchnorm.
+    #
+    #   DROPOUT: Incorporate the backward pass of dropout.
     # ================================================================ #
     #get loss w/ softmax loss
     loss, grad_loss = softmax_loss(scores, y)

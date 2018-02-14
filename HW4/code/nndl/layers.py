@@ -206,7 +206,20 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #         the 'cache' variable.
     # ================================================================ #
 
-    pass
+    
+
+
+    sample_mean = np.mean(x, axis=0)
+    sample_var = np.var(x, axis=0)
+
+    running_mean = momentum*running_mean + (1-momentum)*sample_mean
+    running_var = momentum*running_var + (1-momentum)*sample_var
+
+    x_hat = (x - sample_mean) / np.sqrt(sample_var + eps)
+    out = gamma*x_hat + beta
+
+    #store in cache
+    cache = (mode, x, gamma, sample_mean, sample_var, x_hat, out, eps)
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -221,7 +234,12 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #   Store the output as 'out'.
     # ================================================================ #
 
-    pass
+    stddev = np.sqrt(running_var + eps)
+    x_hat = (x - running_mean)/stddev
+    out = gamma*x_hat + beta
+
+    #store in cache
+    cache = (mode, x, gamma, x_hat, out, eps, stddev)
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -254,11 +272,40 @@ def batchnorm_backward(dout, cache):
   - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
   """
   dx, dgamma, dbeta = None, None, None
-
+  mode = cache[0]
   # ================================================================ #
   # YOUR CODE HERE:
   #   Implement the batchnorm backward pass, calculating dx, dgamma, and dbeta.
   # ================================================================ #
+  if(mode == 'train'):
+    mode, x, gamma, sample_mean, sample_var, x_hat, out, eps = cache
+#    print(cache)
+
+    N, D = x.shape
+
+    dl_dbeta = np.sum(dout, axis=0)
+    dl_dgamma = np.sum(dout*x_hat, axis=0)
+    dl_dx = dout*gamma
+
+
+    dl_da = (1/np.sqrt(sample_var + eps))*dl_dx
+    dl_du = -(1/np.sqrt(sample_var+eps))*np.sum(dl_dx, axis=0)
+
+    dl_de = -0.5*(1/(sample_var+eps))*(x_hat)*dl_dx
+
+    dl_dvar = np.sum(dl_de, axis=0)
+
+    dl_da = (1/(np.sqrt(sample_var + eps)))*dl_dx
+
+    dx = dl_da + 2*((x-sample_mean)/N)*dl_dvar + (1/N)*dl_du
+    dgamma = dl_dgamma 
+    dbeta = dl_dbeta
+
+  elif(mode == 'test'):
+    mode, x, gamma, x_hat, out, eps, stddev = cache
+    dl_dbeta = np.sum(dout, axis=0)
+    dl_dgamma = np.sum(dout*x_hat, axis=0)
+    dx = (gamma*dout)/stddev
 
   # ================================================================ #
   # END YOUR CODE HERE
