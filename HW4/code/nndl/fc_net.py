@@ -88,6 +88,12 @@ class FullyConnectedNet(object):
     #input and output dim (num_classes) will only be used once
     aggregated_dims = [input_dim] + hidden_dims + [num_classes]
     for i in range(self.num_layers):
+      #batchnorm on all layers except last one
+      #init gamms to 1s and betas to 0
+      if self.use_batchnorm and (i != (self.num_layers - 1)):
+        self.params['gamma'+str(i+1)] = np.ones(aggregated_dims[i])
+        self.params['beta'+str(i+1)] = np.zeros(aggregated_dims[i])
+
       self.params['b'+str(i+1)] = np.zeros(aggregated_dims[i+1])
       self.params['W'+str(i+1)] = np.random.normal(mu, stddev, size=(aggregated_dims[i], aggregated_dims[i+1])) 
     # ================================================================ #
@@ -110,8 +116,12 @@ class FullyConnectedNet(object):
     # pass of the second batch normalization layer, etc.
     self.bn_params = []
     if self.use_batchnorm:
-      self.bn_params = [{'mode': 'train'} for i in np.arange(self.num_layers - 1)]
-    
+      self.bn_params = [{'mode': 'train',
+                          'running_mean': np.zeros(aggregated_dims[i]),
+                          'running_var': np.zeros(aggregated_dims[i])} for i in np.arange(self.num_layers - 1)]
+      #for i in range(self.num_layers):
+       # self.bn_params = {'bn_param' + str(i+1) : {'mode' : 'train', 'running_mean' : np.zeros(aggregated_dims[i+1]), 'running_var': np.zeros(aggregated_dims[i+1])}}
+
     # Cast all parameters to the correct datatype
     for k, v in self.params.items():
       self.params[k] = v.astype(dtype)
@@ -151,12 +161,17 @@ class FullyConnectedNet(object):
 
     nn_layer = {}
     nn_cache = {}
+    batchnorm_cache = {}
 
     #initialize the first layer with the inputs
     nn_layer[0] = X
     #pass through each layer
     for i in range(1, self.num_layers):
       #affine relu forward takes (x, w, b)
+      if self.use_batchnorm: 
+        #args: x, gamma, beta, bn_param
+        nn_layer[i], batchnorm_cache[i] = batchnorm_forward(nn_layer[i-1], self.params['gamma'+str(i)], self.params['beta'+str(i)], self.bn_params[i-1])
+
       nn_layer[i], nn_cache[i] = affine_relu_forward(nn_layer[i-1], self.params['W'+str(i)], self.params['b'+str(i)])
 
     #all layers will have the affine_relu except for the last layer, which is a passthrough 
@@ -215,8 +230,16 @@ class FullyConnectedNet(object):
       w_idx = 'W' + str(i)
       b_idx = 'b' + str(i)
 
+      gamma_idx = 'gamma' + str(i)
+      beta_idx = 'beta' + str(i)
+
       #dout input to affine_relu_backward is the 
       dx[i], grads[w_idx], grads[b_idx] = affine_relu_backward( dx[i+1], nn_cache[i])
+
+      if self.use_batchnorm:
+        #returns dx, dgamma, dbeta
+        #takes dout, cache
+        dx[i], grads[gamma_idx], grads[beta_idx] = batchnorm_backward(dx[i+1], batchnorm_cache[i])
 
       #regularize
       grads[w_idx] += self.reg * self.params[w_idx]
