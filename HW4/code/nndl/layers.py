@@ -37,10 +37,14 @@ def affine_forward(x, w, b):
   #   assignments.
   # ================================================================ #
 
-  N = x.shape[0]
-  D = w.shape[0]
-  x_reshaped = np.reshape(x, (N,D))
-  out = x_reshaped.dot(w) + b
+ # N = x.shape[0]
+  #D = w.shape[0]
+  #x_reshaped = np.reshape(x, (N,D))
+  x_shape = x.shape
+  #Reshaping it as N*D
+  #x_shape[0] is equal to N
+  x = x.reshape( [ x_shape[0], np.prod( x_shape[1:]) ] )
+  out = x.dot(w) + b
 
   # ================================================================ #
   # END YOUR CODE HERE
@@ -106,7 +110,9 @@ def relu_forward(x):
   #   Implement the ReLU forward pass.
   # ================================================================ #
 
-  out = np.maximum(0, x)
+#  out = np.maximum(0, x)
+  out = np.maximum(x, np.zeros_like(x))
+
     
   # ================================================================ #
   # END YOUR CODE HERE
@@ -188,6 +194,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
   eps = bn_param.get('eps', 1e-5)
   momentum = bn_param.get('momentum', 0.9)
 
+
+#  print("received x: ", x.shape)
   N, D = x.shape
   running_mean = bn_param.get('running_mean', np.zeros(D, dtype=x.dtype))
   running_var = bn_param.get('running_var', np.zeros(D, dtype=x.dtype))
@@ -205,10 +213,6 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     #     (4) Store any variables you may need for the backward pass in
     #         the 'cache' variable.
     # ================================================================ #
-
-    
-
-
     sample_mean = np.mean(x, axis=0)
     sample_var = np.var(x, axis=0)
 
@@ -216,7 +220,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
     running_var = momentum*running_var + (1-momentum)*sample_var
 
     x_hat = (x - sample_mean) / np.sqrt(sample_var + eps)
-    out = gamma*x_hat + beta
+    out = x_hat*gamma + beta
 
     #store in cache
     cache = (mode, x, gamma, sample_mean, sample_var, x_hat, out, eps)
@@ -236,7 +240,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
     stddev = np.sqrt(running_var + eps)
     x_hat = (x - running_mean)/stddev
-    out = gamma*x_hat + beta
+    out = x_hat*gamma + beta
 
     #store in cache
     cache = (mode, x, gamma, x_hat, out, eps, stddev)
@@ -252,6 +256,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
   bn_param['running_mean'] = running_mean
   bn_param['running_var'] = running_var
 
+#  print(out.shape)
   return out, cache
 
 def batchnorm_backward(dout, cache):
@@ -284,7 +289,7 @@ def batchnorm_backward(dout, cache):
     N, D = x.shape
 
     dl_dbeta = np.sum(dout, axis=0)
-    print(dout.shape, x_hat.shape)
+#    print(dout.shape, x_hat.shape)
     dl_dgamma = np.sum(dout*x_hat, axis=0)
     dl_dx = dout*gamma
 
@@ -443,11 +448,11 @@ def softmax_loss(x, y):
   - loss: Scalar giving the loss
   - dx: Gradient of the loss with respect to x
   """
-
+  eps = 1e-7
   probs = np.exp(x - np.max(x, axis=1, keepdims=True))
   probs /= np.sum(probs, axis=1, keepdims=True)
   N = x.shape[0]
-  loss = -np.sum(np.log(probs[np.arange(N), y])) / N
+  loss = -np.sum(np.log(probs[np.arange(N), y] )) / N
   dx = probs.copy()
   dx[np.arange(N), y] -= 1
   dx /= N

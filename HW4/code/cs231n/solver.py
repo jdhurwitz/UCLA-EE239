@@ -173,10 +173,13 @@ class Solver(object):
         # Make a minibatch of training data
         num_train = self.X_train.shape[0]
         batch_mask = np.random.choice(num_train, self.batch_size)
+#        print("_step", num_train, self.batch_size, batch_mask)
+
         X_batch = self.X_train[batch_mask]
         y_batch = self.y_train[batch_mask]
 
         # Compute loss and gradient
+#        print("_step", X_batch.shape)
         loss, grads = self.model.loss(X_batch, y_batch)
         self.loss_history.append(loss)
 

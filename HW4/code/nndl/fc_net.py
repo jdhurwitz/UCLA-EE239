@@ -91,8 +91,8 @@ class FullyConnectedNet(object):
       #batchnorm on all layers except last one
       #init gamms to 1s and betas to 0
       if self.use_batchnorm and (i != (self.num_layers - 1)):
-        self.params['gamma'+str(i+1)] = np.ones(aggregated_dims[i])
-        self.params['beta'+str(i+1)] = np.zeros(aggregated_dims[i])
+        self.params['gamma'+str(i+1)] = np.ones(aggregated_dims[i+1])
+        self.params['beta'+str(i+1)] = np.zeros(aggregated_dims[i+1])
 
       self.params['b'+str(i+1)] = np.zeros(aggregated_dims[i+1])
       self.params['W'+str(i+1)] = np.random.normal(mu, stddev, size=(aggregated_dims[i], aggregated_dims[i+1])) 
@@ -116,11 +116,8 @@ class FullyConnectedNet(object):
     # pass of the second batch normalization layer, etc.
     self.bn_params = []
     if self.use_batchnorm:
-      self.bn_params = [{'mode': 'train',
-                          'running_mean': np.zeros(aggregated_dims[i]),
-                          'running_var': np.zeros(aggregated_dims[i])} for i in np.arange(self.num_layers - 1)]
       #for i in range(self.num_layers):
-       # self.bn_params = {'bn_param' + str(i+1) : {'mode' : 'train', 'running_mean' : np.zeros(aggregated_dims[i+1]), 'running_var': np.zeros(aggregated_dims[i+1])}}
+      self.bn_params = [{'mode': 'train'} for i in range(self.num_layers - 1)]
 
     # Cast all parameters to the correct datatype
     for k, v in self.params.items():
@@ -167,12 +164,21 @@ class FullyConnectedNet(object):
     nn_layer[0] = X
     #pass through each layer
     for i in range(1, self.num_layers):
+#      print("iteration", i)
+      gamma_idx = 'gamma'+str(i)
+      beta_idx = 'beta'+str(i)
+      w_idx = 'W'+str(i)
+      b_idx = 'b'+str(i)
       #affine relu forward takes (x, w, b)
       if self.use_batchnorm: 
         #args: x, gamma, beta, bn_param
-        nn_layer[i], batchnorm_cache[i] = batchnorm_forward(nn_layer[i-1], self.params['gamma'+str(i)], self.params['beta'+str(i)], self.bn_params[i-1])
-
-      nn_layer[i], nn_cache[i] = affine_relu_forward(nn_layer[i-1], self.params['W'+str(i)], self.params['b'+str(i)])
+#        nn_layer[i], batchnorm_cache[i] = batchnorm_forward(nn_layer[i-1], self.params['gamma'+str(i)], self.params['beta'+str(i)], self.bn_params[i-1])
+#        print(nn_layer[i-1].shape, self.params[w_idx].shape)
+        nn_layer[i], nn_cache[i] = affine_batchnorm_relu_forward(nn_layer[i-1], self.params[w_idx],
+                                                                  self.params[b_idx], self.params[gamma_idx], 
+                                                                  self.params[beta_idx], self.bn_params[i-1])
+      else: 
+        nn_layer[i], nn_cache[i] = affine_relu_forward(nn_layer[i-1], self.params[w_idx], self.params[b_idx])
 
     #all layers will have the affine_relu except for the last layer, which is a passthrough 
     #affine_forward takes (x, w, b) and outputs out, cache
@@ -219,6 +225,7 @@ class FullyConnectedNet(object):
     b_idx_nth = 'b'+str(self.num_layers)
     dx[self.num_layers], grads[w_idx_nth], grads[b_idx_nth] = affine_backward(grad_loss, cached_scores)
 
+#    print(dx[3])
     #regularize
     grads[w_idx_nth] += self.reg * self.params[w_idx_nth]
 
@@ -227,21 +234,24 @@ class FullyConnectedNet(object):
 #      print(i, self.num_layers)
 
       #dx, dw, db
-      w_idx = 'W' + str(i)
-      b_idx = 'b' + str(i)
+      w_idx = 'W' + str(i)#+1)
+      b_idx = 'b' + str(i)#+1)
 
-      gamma_idx = 'gamma' + str(i)
-      beta_idx = 'beta' + str(i)
+      gamma_idx = 'gamma' + str(i)#+1)
+      beta_idx = 'beta' + str(i)#+1)
 
-      #dout input to affine_relu_backward is the 
-      dx[i], grads[w_idx], grads[b_idx] = affine_relu_backward( dx[i+1], nn_cache[i])
+     
 
       if self.use_batchnorm:
-        #returns dx, dgamma, dbeta
-        #takes dout, cache
-        dx[i], grads[gamma_idx], grads[beta_idx] = batchnorm_backward(dx[i+1], batchnorm_cache[i])
+        dx[i], grads[w_idx], grads[b_idx], grads[gamma_idx], grads[beta_idx] = affine_batchnorm_relu_backward(dx[i+1], nn_cache[i])
+ 
+
+      else: 
+         #dout input to affine_relu_backward is the 
+        dx[i], grads[w_idx], grads[b_idx] = affine_relu_backward( dx[i+1], nn_cache[i])
 
       #regularize
+#      print(grads[w_idx].shape, self.params[w_idx].shape )
       grads[w_idx] += self.reg * self.params[w_idx]
 
 

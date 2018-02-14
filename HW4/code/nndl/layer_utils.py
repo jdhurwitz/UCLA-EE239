@@ -32,7 +32,47 @@ def affine_relu_backward(dout, cache):
   """
   Backward pass for the affine-relu convenience layer
   """
-  fc_cache, relu_cache = cache
+  fc_cache = cache[0]
+  relu_cache = cache[1]
   da = relu_backward(dout, relu_cache)
   dx, dw, db = affine_backward(da, fc_cache)
   return dx, dw, db
+
+def affine_batchnorm_relu_forward(x, w, b, gamma, beta, bn_params):
+  """
+  Performs affine transformation, batchnorm, and ReLU
+
+  Returns all caches
+
+  BN forward takes: def batchnorm_forward(x, gamma, beta, bn_param):
+
+  """
+  out, forward_cache = affine_forward(x, w, b)
+#  print("beta received: ", beta.shape)
+  out, batchnorm_cache = batchnorm_forward(out, gamma, beta, bn_params)
+#  print("got dim: ", out.dim)
+  out, relu_cache = relu_forward(out)
+
+  total_cache = (forward_cache,relu_cache, batchnorm_cache)
+#  print("returning out dim: ", out.shape)
+  return out, total_cache
+
+
+def affine_batchnorm_relu_backward(dout, cache):
+  """
+  Backward pass
+  def batchnorm_backward(dout, cache):
+  def relu_backward(dout, cache):
+
+
+  """
+  #unpack the cache tuple
+  forward_cache, relu_cache, batchnorm_cache  = cache
+
+  dx = relu_backward(dout, relu_cache)
+  dx, dgamma, dbeta = batchnorm_backward(dx, batchnorm_cache)
+  dx, dw, db = affine_backward(dx, forward_cache)
+
+  gradients = dx, dw, db, dgamma, dbeta
+  return gradients
+
