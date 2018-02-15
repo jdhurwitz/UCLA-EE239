@@ -159,6 +159,7 @@ class FullyConnectedNet(object):
     nn_layer = {}
     nn_cache = {}
     batchnorm_cache = {}
+    dropout_cache = {}
 
     #initialize the first layer with the inputs
     nn_layer[0] = X
@@ -180,13 +181,16 @@ class FullyConnectedNet(object):
       else: 
         nn_layer[i], nn_cache[i] = affine_relu_forward(nn_layer[i-1], self.params[w_idx], self.params[b_idx])
 
+
+      if(self.use_dropout):
+        nn_layer[i], dropout_cache[i] = dropout_forward(nn_layer[i], self.dropout_param)
     #all layers will have the affine_relu except for the last layer, which is a passthrough 
     #affine_forward takes (x, w, b) and outputs out, cache
     w_idx = 'W'+str(self.num_layers)
     b_idx = 'b'+str(self.num_layers)
     scores, cached_scores = affine_forward(nn_layer[self.num_layers -1], self.params[w_idx], self.params[b_idx])
 
-
+    nn_cache[self.num_layers] = cached_scores
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -241,7 +245,8 @@ class FullyConnectedNet(object):
       beta_idx = 'beta' + str(i)#+1)
 
      
-
+      if self.use_dropout:  
+        dx[i+1] = dropout_backward(dx[i+1], dropout_cache[i])
       if self.use_batchnorm:
         dx[i], grads[w_idx], grads[b_idx], grads[gamma_idx], grads[beta_idx] = affine_batchnorm_relu_backward(dx[i+1], nn_cache[i])
  

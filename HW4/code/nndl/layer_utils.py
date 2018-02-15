@@ -34,6 +34,9 @@ def affine_relu_backward(dout, cache):
   """
   fc_cache = cache[0]
   relu_cache = cache[1]
+#  print("fc cache", fc_cache)
+#  print(len(cache))
+
   da = relu_backward(dout, relu_cache)
   dx, dw, db = affine_backward(da, fc_cache)
   return dx, dw, db

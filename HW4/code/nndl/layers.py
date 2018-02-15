@@ -78,6 +78,7 @@ def affine_backward(dout, cache):
   # ================================================================ #
 
   #reshape x matrix to be N, D and multiply upstream for the chain rule
+  """
   N = x.shape[0]
   D = w.shape[0]
   reshaped_x = np.reshape(x, (N, D))
@@ -88,6 +89,19 @@ def affine_backward(dout, cache):
   dx = np.reshape(dx_raw, x.shape)
   #sum derivative for bias
   db = np.sum(dout, axis=0)
+  """
+#  print
+  dx = np.zeros_like(x)
+  dw = np.zeros_like(w)
+  db = np.zeros_like(b)
+  
+  dx += dout.dot(w.T)
+  dw += x.T.dot(dout)
+  db += dout.sum( axis = 0)
+  
+  # Reshaping dx
+  dx = dx.reshape(x.shape)
+
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
@@ -352,8 +366,9 @@ def dropout_forward(x, dropout_param):
     #   Store the masked and scaled activations in out, and store the 
     #   dropout mask as the variable mask.
     # ================================================================ #
-
-    pass
+#    print(x.shape)
+    mask = (np.random.rand(*x.shape) < p) / p
+    out = x * mask
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -365,7 +380,7 @@ def dropout_forward(x, dropout_param):
     #   Implement the inverted dropout forward pass during test time.
     # ================================================================ #
 
-    pass
+    out = x
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -392,7 +407,7 @@ def dropout_backward(dout, cache):
     # YOUR CODE HERE:
     #   Implement the inverted dropout backward pass during training time.
     # ================================================================ #
-    pass
+    dx = dout*mask
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -401,7 +416,7 @@ def dropout_backward(dout, cache):
     # YOUR CODE HERE:
     #   Implement the inverted dropout backward pass during test time.
     # ================================================================ #
-    pass
+    dx = dout
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
