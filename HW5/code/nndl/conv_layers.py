@@ -244,7 +244,23 @@ def max_pool_backward_naive(dout, cache):
   #   Implement the max pooling backward pass.
   # ================================================================ #
 
+  dx = np.zeros(x.shape)
+  N, C, H, W = x.shape
+  H_prime = 1 + (H - pool_height)/stride
+  W_prime = 1 + (W - pool_width)/stride
+  for i in range(N):
+    for j in range(C):
+      for k in range(int(H_prime)):
+        for l in range(int(W_prime)):
+          k_prime = k * stride
+          l_prime = l * stride
 
+          #we want to only reward for the one we picked
+          cur_window = x[i, j, k_prime:k_prime + pool_height, l_prime:l_prime + pool_width]
+          max_cur_window = np.max(cur_window)
+          masked_window = (cur_window == max_cur_window)
+          derivative = dout[i,j,k,l] * masked_window
+          dx[i, j, k_prime:k_prime + pool_height, l_prime:l_prime + pool_width ] += derivative 
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ # 
