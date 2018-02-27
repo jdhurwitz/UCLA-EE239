@@ -298,7 +298,19 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
   #   You may find it useful to use the batchnorm forward pass you 
   #   implemented in HW #4.
   # ================================================================ #
-  
+  #mode = bn_param['mode']
+ # eps = bn_param.get['eps']
+#  momentum = bn_param.get['momentum']
+  N, C, H, W = x.shape
+
+  #reshape the (N, C, H, W) array as an (N*H*W, C) array and perform batch normalization on this array.
+  transpose = np.transpose(x, axes=(0,2,3,1))
+  reshaped = transpose.reshape(N*H*W, C)
+  bn_out, cache = batchnorm_forward(reshaped, gamma, beta, bn_param)
+
+  #reshape again and swap 
+  out = bn_out.reshape(N, H, W, C).transpose(0, 3, 1, 2)
+
   
 
   # ================================================================ #
@@ -330,7 +342,16 @@ def spatial_batchnorm_backward(dout, cache):
   #   You may find it useful to use the batchnorm forward pass you 
   #   implemented in HW #4.
   # ================================================================ #
-  
+
+
+  N, C, H, W = dout.shape
+  transpose = np.transpose(dout, axes=(0,2,3,1))
+  reshaped = transpose.reshape(N*H*W, C)
+  dx_bn, dgamma_bn, dbeta_bn = batchnorm_backward(reshaped, cache)
+
+  dx = dx_bn.reshape(N, H, W, C).transpose(0,3,1,2)
+  dgamma = dgamma_bn
+  dbeta = dbeta_bn
 
   # ================================================================ #
   # END YOUR CODE HERE

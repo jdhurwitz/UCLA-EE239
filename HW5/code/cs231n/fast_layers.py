@@ -142,7 +142,9 @@ def max_pool_forward_fast(x, pool_param):
     is not much faster than the naive method.
     """
     N, C, H, W = x.shape
-    pool_height, pool_width = pool_param['pool_height'], pool_param['pool_width']
+#    print(pool_param)
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
     stride = pool_param['stride']
 
     same_size = pool_height == pool_width == stride
