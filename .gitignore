@@ -1,3 +1,4 @@
 .env
 cifar-10-batches-py/
 **/.DS_Store
+project_datasets/
